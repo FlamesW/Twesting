@@ -6046,6 +6046,43 @@ function API:GetSpectateTarget()
     return self.Spectate_Target
 end
 
+function API:Load_NeverLose()
+    if self.NeverLose_Injected then
+        return self.NeverLose_Injected
+    end
+
+    -- // Load Neverlose Library, Credits to 4lpaca for making this ui library 💕
+    local Repo, Cache = ("https://raw.githubusercontent.com/FlamesW/Neverlose/refs/heads/home/Library.luau"), ("NeverLose/Assets/Library.luau")
+    local Content = self:LoadData(Cache)
+
+    if Content and type(Content) == "string" and #Content > 0 then
+        task_spawn(function()
+            local Success, Remote = pcall(function()
+                return Game:HttpGet(Repo .. "?nocache=" .. tostring(os_clock()))
+            end)
+
+            if Success and Remote and Remote ~= Content then
+                self:SaveData(Cache, Remote)
+            end
+        end)
+    else
+        Content = Game:HttpGet(Repo .. "?nocache=" .. tostring(os_clock()))
+        self:SaveData(Cache, Content)
+    end
+
+    local Success, Library = pcall(function()
+        return loadstring(Content)()
+    end)
+
+    if not Success then
+        warn("[NeverLose]: Failed to load: " .. tostring(Library))
+        return nil
+    end
+
+    self.NeverLose_Injected = Library
+    return Library
+end
+
 function API:Load_Obsidian(Options)
     Options = Options or {}
 
