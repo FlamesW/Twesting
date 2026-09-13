@@ -126,17 +126,26 @@ end
 
 function API:_Inject(Url, t, Cache)
     local Source
+
     if Cache and type(Cache) == "string" and #Cache > 0 then
-        local CachePath = self:Hotpath(Cache)
+        local Cache_Path = self:Hotpath(Cache)
+        local Cached = self:LoadData(Cache_Path)
 
-        local Dir = CachePath:match("(.+)/")
-        if Dir then self:CreateDirectory(Dir) end
+        if Cached and type(Cached) == "string" and #Cached > 0 then
+            Source = Cached
 
-        if is_file(CachePath) then
-            Source = read_file(CachePath)
+            task_spawn(function()
+                local Success, Remote = pcall(function()
+                    return Game:HttpGet(Url .. "?nocache=" .. tostring(os_clock()))
+                end)
+
+                if Success and Remote and Remote ~= Cached then
+                    self:SaveData(Cache_Path, Remote)
+                end
+            end)
         else
             Source = Game:HttpGet(Url .. "?nocache=" .. tostring(os_clock()))
-            pcall(write_file, CachePath, Source)
+            self:SaveData(Cache_Path, Source)
         end
     else
         Source = Game:HttpGet(Url .. "?nocache=" .. tostring(os_clock()))
