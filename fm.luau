@@ -124,8 +124,23 @@ function API:_ExitFM(): ()
     for Name, _ in pairs(self._Signal or {}) do self:_Disconnect(Name) end; self._Signal = nil
 end
 
-function API:_Inject(Url, t)
-    local Source = Game:HttpGet(Url .. "?nocache=" .. tostring(os_clock()))
+function API:_Inject(Url, t, Cache)
+    local Source
+    if Cache and type(Cache) == "string" and #Cache > 0 then
+        local CachePath = self:Hotpath(Cache)
+
+        local Dir = CachePath:match("(.+)/")
+        if Dir then self:CreateDirectory(Dir) end
+
+        if is_file(CachePath) then
+            Source = read_file(CachePath)
+        else
+            Source = Game:HttpGet(Url .. "?nocache=" .. tostring(os_clock()))
+            pcall(write_file, CachePath, Source)
+        end
+    else
+        Source = Game:HttpGet(Url .. "?nocache=" .. tostring(os_clock()))
+    end
 
     local Names, Values = {}, {}
     for k, v in pairs(t or {}) do
